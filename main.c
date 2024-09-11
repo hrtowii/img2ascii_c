@@ -31,6 +31,15 @@ int main(int argc, char* argv[]) {
 	int new_height = (height * TARGET_WIDTH) / width;
     unsigned char *resized_image = malloc(TARGET_WIDTH * new_height * channels);
 	stbir_resize_uint8(image, width, height, 0, resized_image, TARGET_WIDTH, new_height, 0, channels);
+    int max_buffer_size = new_height * TARGET_WIDTH * (27 + 2 + 10);
+    char *art_buffer = malloc(max_buffer_size);
+    if (art_buffer == NULL) {
+        printf("Failed to allocate memory for art buffer\n");
+        stbi_image_free(image);
+        free(resized_image);
+        return -1;
+    }
+    art_buffer[0] = '\0';
 	for (int j = 0; j < new_height; j++) {
 		for (int i = 0; i < TARGET_WIDTH; i++) {
 			int pixel = (j * TARGET_WIDTH + i) * channels;
@@ -40,11 +49,15 @@ int main(int argc, char* argv[]) {
 			int avg_brightness = (r + g + b) / 3;
 			char c = brightness[avg_brightness * (brightness_len - 1) / 255];
 			const char* color = get_color(r, g, b);
-            printf("%s%c%s", color, c, "\033[0m");
+			snprintf(art_buffer + strlen(art_buffer), max_buffer_size - strlen(art_buffer), "%s%c%s", color, c, "\033[0m");
+            // printf("%s%c%s", color, c, "\033[0m");
 		}
-		printf("\n");
+		// printf("\n");
+		snprintf(art_buffer + strlen(art_buffer), max_buffer_size - strlen(art_buffer), "\n");
 	}
+	printf("%s", art_buffer);
 	stbi_image_free(image);
 	free(resized_image);
+	free(art_buffer);
 	return 0;
 }
