@@ -50,17 +50,14 @@ int main(int argc, char* argv[]) {
 		return 0;
 	} else {
 		char* output_path = argv[2];
-
-        int ascii_width = width;
-        int ascii_height = height;
 		// idea: create a hashmap that stores <character, rgb as a struct>
 		struct ascii_character** ascii_image = malloc(height * sizeof(struct ascii_character*));
         for (int i = 0; i < height; i++) {
             ascii_image[i] = malloc(width * sizeof(struct ascii_character));
         }
 		// struct ascii_character ascii_image[height][width];
-        for (int j = 0; j < ascii_height; j++) {
-            for (int i = 0; i < ascii_width; i++) {
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
                 int pixel = (j * CHAR_HEIGHT * width + i * CHAR_WIDTH) * channels;
                 unsigned char r = image[pixel];
                 unsigned char g = image[pixel + 1];
@@ -74,7 +71,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        create_image_from_ascii(ascii_image, ascii_height, ascii_width, output_path);
+        create_image_from_ascii(ascii_image, height, width, output_path);
 		for (int i = 0; i < height; i++) {
             free(ascii_image[i]);
         }
