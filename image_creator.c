@@ -47,70 +47,76 @@ struct ascii_character
 	struct color color;
 };
 
-int create_image_from_ascii(struct ascii_character** character, int image_height, int image_width, char* output)
-{
-    int char_width = CHAR_WIDTH;
-    int char_height = CHAR_HEIGHT;
-    int out_width = image_width * char_width;
-    int out_height = image_height * char_height;
-    int bitcount = 24; // 24-bit bitmap
-    int width_in_bytes = ((image_width * bitcount + 31) / 32) * 4; // for padding
-    uint32_t imagesize = width_in_bytes * image_height; // total image size
-
-    struct my_BITMAPFILEHEADER filehdr = { 0 };
-    struct my_BITMAPINFOHEADER infohdr = { 0 };
-
-    memcpy(&filehdr, "BM", 2); // bitmap signature
-    filehdr.bfSize = 54 + imagesize; // total file size
-    filehdr.bfOffBits = 54; // sizeof(filehdr) + sizeof(infohdr)
-
-    infohdr.biSize = 40; // sizeof(infohdr)
-    infohdr.biPlanes = 1; // number of planes
-    infohdr.biWidth = image_width;
-    infohdr.biHeight = image_height;
-    infohdr.biBitCount = bitcount;
-    infohdr.biSizeImage = imagesize;
-
-    unsigned char* buf = malloc(imagesize);
-    if (!buf) {
-        printf("Error allocating memory for image\n");
-        return -1;
-    }
-    for (int row = image_height - 1; row >= 0; row--) {
-        for (int col = 0; col < image_width; col++) {
-            char ascii_char = character[row][col].brightness;
-            const unsigned char* char_bitmap = get_char_bitmap(ascii_char);
-            for (int y = 0; y < char_height; y++) {
-                for (int x = 0; x < char_width; x++) {
-                    int buf_row = out_height - 1 - (row * char_height + y);
-                    int buf_col = col * char_width + x;
-                    int pixel_index = buf_row * width_in_bytes + buf_col * 3;
-                    if (char_bitmap[y] & (1 << (7 - x))) {
-                        buf[pixel_index + 0] = character[row][col].color.blue;
-                        buf[pixel_index + 1] = character[row][col].color.green;
-                        buf[pixel_index + 2] = character[row][col].color.red;
-                    } else {
-                        buf[pixel_index + 0] = 0;
-                        buf[pixel_index + 1] = 0;
-                        buf[pixel_index + 2] = 0;
-                    }
+void draw_char(unsigned char* buf, int x, int y, char c, struct color color, int width, int height, int width_in_bytes) {
+    const unsigned char* char_bitmap = get_char_bitmap(c);
+    
+    for (int dy = 0; dy < 8; dy++) {
+        for (int dx = 0; dx < 5; dx++) {
+            if (char_bitmap[dx] & (1 << dy)) {
+                int px = x + dx;
+                int py = y + dy;
+                if (px < width && py < height) {
+                    int index = (height - 1 - py) * width_in_bytes + px * 3;
+                    buf[index] = color.blue;
+                    buf[index + 1] = color.green;
+                    buf[index + 2] = color.red;
                 }
             }
         }
     }
+}
 
+int create_image_from_ascii(struct ascii_character** character, int image_height, int image_width, char* output)
+{
+    int out_width = image_width;
+    int out_height = image_height;
+    int bitcount = 24; // 24-bit bitmap
+    int width_in_bytes = ((out_width * bitcount + 31) / 32) * 4; // for padding
+    uint32_t imagesize = width_in_bytes * out_height; // total image size
+
+    // printf("Debug: Output dimensions: %d x %d\n", out_width, out_height);
+    // printf("Debug: Image size: %u bytes\n", imagesize);
+
+    struct my_BITMAPFILEHEADER filehdr = { 0 };
+    struct my_BITMAPINFOHEADER infohdr = { 0 };
+
+    filehdr.bfType = 0x4D42;
+    filehdr.bfSize = 54 + imagesize; // total file size
+    filehdr.bfOffBits = 54; // sizeof(filehdr) + sizeof(infohdr)
+
+    infohdr.biSize = 40; // sizeof(infohdr)
+    infohdr.biWidth = out_width;
+    infohdr.biHeight = out_height;
+    infohdr.biPlanes = 1;
+    infohdr.biBitCount = bitcount;
+    infohdr.biSizeImage = imagesize;
+
+    unsigned char* buf = calloc(imagesize, 1);
+    if (!buf) {
+        printf("Error: Failed to allocate memory for image buffer\n");
+        return -1;
+    }
+    memset(buf, 0, imagesize);
+
+    for (int row = 0; row < image_height; row++) {
+        for (int col = 0; col < image_width; col++) {
+            int x = col * CHAR_WIDTH;
+            int y = row * CHAR_HEIGHT;
+            draw_char(buf, x, y, character[row][col].brightness, character[row][col].color, out_width, out_height, width_in_bytes);
+        }
+    }
     FILE *fout = fopen(output, "wb");
     if (!fout) {
-        printf("Error opening file for writing\n");
+        printf("Error: Failed to open file for writing: %s\n", output);
         free(buf);
         return -1;
     }
     
     fwrite(&filehdr, sizeof(filehdr), 1, fout);
     fwrite(&infohdr, sizeof(infohdr), 1, fout);
-    fwrite((char*)buf, 1, imagesize, fout);
-    fclose(fout);
+    fwrite(buf, 1, imagesize, fout);
 
+    fclose(fout);
     free(buf);
 
     printf("Image successfully written to %s\n", output);

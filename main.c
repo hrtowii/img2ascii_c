@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
 	} else {
 		char* output_path = argv[2];
 
-        int ascii_width = width / CHAR_WIDTH;
-        int ascii_height = height / CHAR_HEIGHT;
+        int ascii_width = width;
+        int ascii_height = height;
 		// idea: create a hashmap that stores <character, rgb as a struct>
 		struct ascii_character** ascii_image = malloc(height * sizeof(struct ascii_character*));
         for (int i = 0; i < height; i++) {
