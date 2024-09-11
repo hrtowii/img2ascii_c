@@ -8,7 +8,7 @@ CFLAGS = -O3
 FRAMEWORKS =
 
 # Source file
-SRC = main.c image_creator.c
+SRC = main.c image_creator.c bitmap.c
 
 # Output executable
 OUT = main
