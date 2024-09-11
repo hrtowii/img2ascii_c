@@ -4,21 +4,15 @@
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
-#include "color.h"
 #define TARGET_WIDTH 500
+#define RESET "\033[0;m"
+
 const char brightness[] = "`.',-~:;=+*#%@";
 
-const char* get_color(unsigned char r, unsigned char g, unsigned char b) {
-    if (r > g && r > b) return RED;
-    if (g > r && g > b) return GREEN;
-    if (b > r && b > g) return BLUE;
-    if (r > 200 && g > 200 && b > 200) return WHITE;
-    if (r < 50 && g < 50 && b < 50) return BLACK;
-    if (abs(r - g) < 30 && abs(g - b) < 30 && abs(r - b) < 30) return BGRAY;
-    if (r > b && g > b && abs(r - g) < 50) return YELLOW;
-    if (r > g && b > g && abs(r - b) < 50) return MAGENTA;
-    if (g > r && b > r && abs(g - b) < 50) return CYAN;
-    return WHITE;
+const char* get_color(int r, int g, int b) {
+	static char color[50];
+	sprintf(color, "\033[38;2;%d;%d;%dm]", r, g, b);
+	return color;
 }
 
 int main(int argc, char* argv[]) {
