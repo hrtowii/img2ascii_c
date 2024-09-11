@@ -4,13 +4,12 @@
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
-#define TARGET_WIDTH 500
-#define RESET "\033[0;m"
+#define TARGET_WIDTH 300
 
 const char brightness[] = "`.',-~:;=+*#%@";
 
 const char* get_color(int r, int g, int b) {
-	static char color[50];
+	static char color[27];
 	sprintf(color, "\033[38;2;%d;%d;%dm]", r, g, b);
 	return color;
 }
@@ -29,7 +28,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	int new_height = (height * TARGET_WIDTH) / width / 2;
+	int new_height = (height * TARGET_WIDTH) / width;
     unsigned char *resized_image = malloc(TARGET_WIDTH * new_height * channels);
 	stbir_resize_uint8(image, width, height, 0, resized_image, TARGET_WIDTH, new_height, 0, channels);
 	for (int j = 0; j < new_height; j++) {
@@ -40,27 +39,11 @@ int main(int argc, char* argv[]) {
 			unsigned char b = resized_image[pixel + 2];
 			int avg_brightness = (r + g + b) / 3;
 			char c = brightness[avg_brightness * (brightness_len - 1) / 255];
-            // printf("%c", c);
 			const char* color = get_color(r, g, b);
-            printf("%s%c%s", color, c, RESET);
+            printf("%s%c%s", color, c, "\033[0m");
 		}
 		printf("\n");
 	}
-	// printf("image: %dpx, %dpx, %d channels\n", width, height, channels);
-	// for (int j = 0; j < height; j++) {
-	// 	for (int i = 0; i < width; i++) {
-	// 		int pixel = (j * width + i) * channels;
-	// 		unsigned char r = image[pixel];
-	// 		unsigned char g = image[pixel + 1];
-	// 		unsigned char b = image[pixel + 2];
-	// 		int avg_brightness = (r + g + b) / 3;
-	// 		char c = brightness[avg_brightness * (brightness_len - 1) / 255];
-    //         // printf("%c", c);
-	// 		const char* color = get_color(r, g, b);
-    //         printf("%s%c%s", color, c, RESET);
-	// 	}
-	// 	printf("\n");
-	// }
 	stbi_image_free(image);
 	free(resized_image);
 	return 0;
