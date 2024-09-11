@@ -68,5 +68,6 @@ int main(int argc, char* argv[]) {
 	// 	printf("\n");
 	// }
 	stbi_image_free(image);
+	free(resized_image);
 	return 0;
 }
