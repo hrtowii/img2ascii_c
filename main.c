@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
             free(ascii_image[i]);
         }
         free(ascii_image);
+		free(image);
 		// create_bitmap(316, 316, "test.bmp");
 	}
 }
