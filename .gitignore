@@ -5,3 +5,4 @@
 /main
 *.bmp
 main.dSYM/*
+.DS_Store
