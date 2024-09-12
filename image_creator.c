@@ -68,8 +68,8 @@ void draw_char(unsigned char* buf, int x, int y, char c, struct color color, int
 
 int create_image_from_ascii(struct ascii_character** character, int image_height, int image_width, char* output)
 {
-    int out_width = image_width;
-    int out_height = image_height;
+    int out_width = image_width; // * CHAR_WIDTH
+    int out_height = image_height; // * CHAR_HEIGHT -> makes each character 1 pixel, image is huge
     int bitcount = 24; // 24-bit bitmap
     int width_in_bytes = ((out_width * bitcount + 31) / 32) * 4; // for padding
     uint32_t imagesize = width_in_bytes * out_height; // total image size

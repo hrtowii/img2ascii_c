@@ -4,3 +4,4 @@
 /test.txt
 /main
 *.bmp
+main.dSYM/*

@@ -2,7 +2,7 @@
 CC = clang
 
 # Compiler flags
-CFLAGS = -g
+CFLAGS = -O3
 
 # Frameworks
 FRAMEWORKS =

@@ -7,7 +7,7 @@
 #define TARGET_WIDTH 300
 #include "image_creator.h"
 #include "bitmap.h"
-const char brightness[] = "`.',-~:;=+*#%@";
+const char brightness[] = "`.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
 
 const char* get_color(int r, int g, int b) {
 	static char color[27];
@@ -55,10 +55,16 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < height; i++) {
             ascii_image[i] = malloc(width * sizeof(struct ascii_character));
         }
-		// struct ascii_character ascii_image[height][width];
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
                 int pixel = (j * CHAR_HEIGHT * width + i * CHAR_WIDTH) * channels;
+				if (pixel >= width * height * channels) {
+					// pixel = width * height * channels;
+					// printf("%d, %d\n", width * height * channels, pixel);
+					// printf("skipping! %d, %d", i, j);
+					continue;
+				}
+				// size_t pixel = ((size_t)j * width + i) * channels; // for full size image, where 1 character = 1 pixel (makes images HUGE)
                 unsigned char r = image[pixel];
                 unsigned char g = image[pixel + 1];
                 unsigned char b = image[pixel + 2];
