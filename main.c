@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
                 unsigned char g = image[pixel + 1];
                 unsigned char b = image[pixel + 2];
                 int avg_brightness = (r + g + b) / 3;
-                char c = brightness[avg_brightness * (brightness_len - 1) / 255];
+                char c = brightness[avg_brightness * (brightness_len - 1) / 256];
                 ascii_image[j][i].brightness = c;
                 ascii_image[j][i].color.red = r;
                 ascii_image[j][i].color.green = g;
