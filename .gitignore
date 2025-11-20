@@ -6,3 +6,4 @@
 *.bmp
 main.dSYM/*
 .DS_Store
+build/*
