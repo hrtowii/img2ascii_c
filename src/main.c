@@ -55,7 +55,7 @@ int main(int argc, const char **argv) {
   int desired_height = 0;
   int terminal_mode = 0;
   int braille_mode = 0;
-  int fuzziness = 1;
+  int levels = 1;
 
   const char *input_path = NULL;
   const char *output_path = NULL;
@@ -65,7 +65,7 @@ int main(int argc, const char **argv) {
       OPT_GROUP("options"),
       OPT_INTEGER('w', "width", &desired_width, "target width", NULL, 0, 0),
       OPT_INTEGER('he', "height", &desired_height, "target height", NULL, 0, 0),
-      OPT_INTEGER('f', "fuzziness", &fuzziness,
+      OPT_INTEGER('f', "fuzziness", &levels,
                   "fuzziness: how many brightness steps share the same char",
                   NULL, 0, 0),
       OPT_STRING('o', "output", &output_path, "output image file", NULL, 0, 0),
@@ -173,8 +173,11 @@ int main(int argc, const char **argv) {
           unsigned char g = resized_image[pixel + 1];
           unsigned char b = resized_image[pixel + 2];
           int avg_brightness = (r + g + b) / 3;
-          char c = brightness[(avg_brightness / fuzziness) *
-                              (brightness_len - 1) / (256 / fuzziness)];
+          int quantized = (avg_brightness + (255 / levels / 2)) /
+                          (256 / levels); // proper rounding
+          int index = quantized * (brightness_len - 1) / (levels - 1);
+          index = index >= brightness_len ? brightness_len - 1 : index;
+          char c = brightness[index];
           const char *color = get_color(r, g, b);
           printf("%s%c%s", color, c, "\033[0m");
         }
@@ -200,8 +203,10 @@ int main(int argc, const char **argv) {
         unsigned char g = image[pixel + 1];
         unsigned char b = image[pixel + 2];
         int avg_brightness = (r + g + b) / 3;
-        int index = (avg_brightness / fuzziness) * (brightness_len - 1) /
-                    (256 / fuzziness);
+        int quantized = (avg_brightness + (255 / levels / 2)) /
+                        (256 / levels); // proper rounding
+        int index = quantized * (brightness_len - 1) / (levels - 1);
+        index = index >= brightness_len ? brightness_len - 1 : index;
         char c = brightness[index];
         ascii_image[j][i].brightness = c;
         ascii_image[j][i].color.red = r;
