@@ -65,10 +65,10 @@ void draw_char(unsigned char *buf, int x, int y, char c, struct color color,
   }
 }
 
-int image_create_from_path(char *path) {}
+int image_create_from_path(const char *path) {}
 
 int create_image_from_ascii(struct ascii_character **character,
-                            int image_height, int image_width, char *output) {
+                            int image_height, int image_width, const char *output) {
   // int out_width = image_width * CHAR_WIDTH;
   // int out_height = image_height * CHAR_HEIGHT; // -> makes each character 1
   // pixel, image is huge

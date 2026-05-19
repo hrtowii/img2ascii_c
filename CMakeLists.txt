@@ -8,26 +8,34 @@ set(CMAKE_C_FLAGS "-Ofast")
 set(CMAKE_C_FLAGS_DEBUG "-g -O0 -fsanitize=address -fsanitize=undefined")
 set(CMAKE_C_FLAGS_RELEASE "-Ofast")
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-option(ARGPARSE_SHARED "Build shared library" OFF)
-option(ARGPARSE_STATIC "Build static library" ON)
 
-include(FetchContent)
-FetchContent_Declare(
-    argparse
-    GIT_REPOSITORY https://github.com/cofyc/argparse.git
-    GIT_TAG        v1.1.0
-    # or, you could use a commit hash
-    #GIT_TAG       15091715cc379bc647d5de6345185a288a35f999
-)
-FetchContent_MakeAvailable(argparse)
+option(IMG2ASCII_BUILD_LIB "Build the static library" ON)
+option(IMG2ASCII_BUILD_CLI "Build the CLI tool" ON)
 
-include_directories(lib)
+find_library(MATH_LIBRARY m)
 
-file(GLOB_RECURSE SOURCES "src/*.c")
+if(IMG2ASCII_BUILD_LIB)
+    add_library(img2ascii STATIC lib/img2ascii.c)
+    target_include_directories(img2ascii PUBLIC ${CMAKE_SOURCE_DIR}/lib)
+endif()
 
-add_executable(${PROJECT_NAME} ${SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/lib)
-target_link_libraries(${PROJECT_NAME} PRIVATE argparse)
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    OUTPUT_NAME "img2ascii"
-)
+if(IMG2ASCII_BUILD_CLI)
+    option(ARGPARSE_SHARED "Build shared library" OFF)
+    option(ARGPARSE_STATIC "Build static library" ON)
+
+    include(FetchContent)
+    FetchContent_Declare(
+        argparse
+        GIT_REPOSITORY https://github.com/cofyc/argparse.git
+        GIT_TAG        v1.1.0
+    )
+    FetchContent_MakeAvailable(argparse)
+
+    file(GLOB_RECURSE CLI_SOURCES "src/*.c")
+    add_executable(img2ascii_cli ${CLI_SOURCES})
+    target_include_directories(img2ascii_cli PRIVATE ${CMAKE_SOURCE_DIR}/lib)
+    target_link_libraries(img2ascii_cli PRIVATE img2ascii argparse ${MATH_LIBRARY})
+    set_target_properties(img2ascii_cli PROPERTIES
+        OUTPUT_NAME "img2ascii"
+    )
+endif()

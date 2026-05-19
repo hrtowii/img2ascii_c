@@ -3,43 +3,12 @@
 #include <string.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb_image_resize.h"
-#define TARGET_WIDTH 300
 #include "argparse.h"
 #include "bitmap.h"
 #include "image_creator.h"
+#include "img2ascii.h"
 #include <locale.h>
 #include <wchar.h>
-
-const char brightness[] =
-    "`.-':_,^=;><+!rc*/"
-    "z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
-
-const char *get_color(int r, int g, int b) {
-  static char color[27];
-  sprintf(color, "\033[38;2;%d;%d;%dm", r, g, b);
-  return color;
-}
-
-static inline unsigned int braille_from_dots(int d1, int d2, int d3, int d4,
-                                             int d5, int d6, int d7, int d8) {
-  return 0x2800 | (d1 ? 1 << 0 : 0) | (d2 ? 1 << 1 : 0) | (d3 ? 1 << 2 : 0) |
-         (d4 ? 1 << 3 : 0) | (d5 ? 1 << 4 : 0) | (d6 ? 1 << 5 : 0) |
-         (d7 ? 1 << 6 : 0) | (d8 ? 1 << 7 : 0);
-}
-
-char *braille_char(char buf[5], int d1, int d2, int d3, int d4, int d5, int d6,
-                   int d7, int d8) {
-  unsigned int cp = braille_from_dots(d1, d2, d3, d4, d5, d6, d7, d8);
-
-  buf[0] = 0xE0 | ((cp >> 12) & 0x0F);
-  buf[1] = 0x80 | ((cp >> 6) & 0x3F);
-  buf[2] = 0x80 | (cp & 0x3F);
-  buf[3] = '\0';
-
-  return buf;
-}
 
 static const char *const usages[] = {
     "img2ascii [options] <input> [output] [height]",
@@ -50,8 +19,8 @@ static const char *const usages[] = {
 int main(int argc, const char **argv) {
   setlocale(LC_ALL, "");
   int width, height, channels;
-  int brightness_len = strlen(brightness);
-  int desired_width = TARGET_WIDTH;
+  int brightness_len = img2ascii_brightness_len;
+  int desired_width = IMG2ASCII_DEFAULT_WIDTH;
   int desired_height = 0;
   int terminal_mode = 0;
   int braille_mode = 0;
@@ -64,7 +33,7 @@ int main(int argc, const char **argv) {
       OPT_HELP(),
       OPT_GROUP("options"),
       OPT_INTEGER('w', "width", &desired_width, "target width", NULL, 0, 0),
-      OPT_INTEGER('he', "height", &desired_height, "target height", NULL, 0, 0),
+      OPT_INTEGER('h', "height", &desired_height, "target height", NULL, 0, 0),
       OPT_INTEGER('f', "fuzziness", &levels,
                   "fuzziness: how many brightness steps share the same char",
                   NULL, 0, 0),
@@ -107,85 +76,18 @@ int main(int argc, const char **argv) {
     return -1;
   }
   if (!output_path || terminal_mode) {
-    int new_height;
-    if (desired_height > 0) {
-      new_height = desired_height;
-    } else {
-      new_height = (height * desired_width) / width;
-    }
-    int new_width = desired_width;
-    unsigned char *resized_image = malloc(new_width * new_height * channels);
-    stbir_resize_uint8(image, width, height, 0, resized_image, new_width,
-                       new_height, 0, channels);
-    if (braille_mode) {
-      for (int j = 0; j < new_height; j += 4) {
-        for (int i = 0; i < new_width; i += 2) {
+    img2ascii_opts opts;
+    opts.target_width = desired_width;
+    opts.target_height = desired_height;
+    opts.fuzziness = levels;
+    opts.braille = braille_mode;
 
-          int dots[8] = {0};
-
-          for (int dy = 0; dy < 4; dy++) {
-            for (int dx = 0; dx < 2; dx++) {
-              int y = j + dy;
-              int x = i + dx;
-
-              if (y >= new_height || x >= new_width)
-                continue;
-
-              int idx = dy * 2 + dx;
-              int pixel = (y * new_width + x) * channels;
-
-              unsigned char r = resized_image[pixel];
-              unsigned char g = resized_image[pixel + 1];
-              unsigned char b = resized_image[pixel + 2];
-              int bright = (r + g + b) / 3;
-
-              int num = (bright * 8) / 256; // 0..8
-
-              static int order[8] = {0, 3, 1, 4, 2, 5, 6, 7};
-
-              dots[idx] = 0; // reset
-              for (int k = 0; k < num; k++) {
-                dots[order[k]] = 1;
-              }
-            }
-          }
-
-          int mid = (j * new_width + i) * channels;
-          unsigned char r = resized_image[mid];
-          unsigned char g = resized_image[mid + 1];
-          unsigned char b = resized_image[mid + 2];
-          const char *color = get_color(r, g, b);
-
-          char glyph[5];
-          char *bchr = braille_char(glyph, dots[0], dots[1], dots[2], dots[3],
-                                    dots[4], dots[5], dots[6], dots[7]);
-
-          printf("%s%s\033[0m", color, bchr);
-        }
-        printf("\n");
-      }
-
-    } else {
-      for (int j = 0; j < new_height; j++) {
-        for (int i = 0; i < new_width; i++) {
-          int pixel = (j * new_width + i) * channels;
-          unsigned char r = resized_image[pixel];
-          unsigned char g = resized_image[pixel + 1];
-          unsigned char b = resized_image[pixel + 2];
-          int avg_brightness = (r + g + b) / 3;
-          int quantized = (avg_brightness + (255 / levels / 2)) /
-                          (256 / levels); // proper rounding
-          int index = quantized * (brightness_len - 1) / (levels - 1);
-          index = index >= brightness_len ? brightness_len - 1 : index;
-          char c = brightness[index];
-          const char *color = get_color(r, g, b);
-          printf("%s%c%s", color, c, "\033[0m");
-        }
-        printf("\n");
-      }
+    char *result = img2ascii(image, width, height, channels, opts);
+    if (result) {
+      printf("%s", result);
+      free(result);
     }
     stbi_image_free(image);
-    free(resized_image);
     return 0;
   } else {
     struct ascii_character **ascii_image =
@@ -203,11 +105,17 @@ int main(int argc, const char **argv) {
         unsigned char g = image[pixel + 1];
         unsigned char b = image[pixel + 2];
         int avg_brightness = (r + g + b) / 3;
-        int quantized = (avg_brightness + (255 / levels / 2)) /
-                        (256 / levels); // proper rounding
-        int index = quantized * (brightness_len - 1) / (levels - 1);
-        index = index >= brightness_len ? brightness_len - 1 : index;
-        char c = brightness[index];
+        char c;
+        if (levels == 1) {
+          c = img2ascii_brightness[brightness_len / 2];
+        } else {
+          int quantized = (avg_brightness + (255 / levels / 2)) /
+                          (256 / levels);
+          if (quantized >= levels) quantized = levels - 1;
+          int index = quantized * (brightness_len - 1) / (levels - 1);
+          if (index >= brightness_len) index = brightness_len - 1;
+          c = img2ascii_brightness[index];
+        }
         ascii_image[j][i].brightness = c;
         ascii_image[j][i].color.red = r;
         ascii_image[j][i].color.green = g;

@@ -11,4 +11,4 @@ struct ascii_character
 	struct color color;
 };
 
-int create_image_from_ascii(struct ascii_character** character, int image_height, int image_width, char* output);
+int create_image_from_ascii(struct ascii_character** character, int image_height, int image_width, const char* output);
